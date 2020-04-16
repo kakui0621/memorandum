@@ -1,0 +1,1113 @@
+Webアプリ開発入門 PHP+MySQL編1: 掲示板を作ろう
+
+
+
+
+
+
+01:Webアプリの仕組みを理解しよう
+
+ LAMPとは
+LAMP(ランプ)とは、Webアプリケーションの実行環境の組み合わせです。
+Webアプリケーションの実行環境では、ふつう、OSとWebサーバ、データベース、
+スクリプト言語を組み合わせて利用します。
+
+中でもLAMPは、Webサービスがはやり始めたころからある、オーソドックスな組み合わせです。
+OSにLinux(リナックス)、WebサーバにApache(アパッチ)、データベースにMySQL(マイエスキューエル)、
+スクリプト言語にPHP(ピーエイチピー)という組み合わせを利用し、
+その頭文字をとって、LAMP(ランプ)と呼びます。
+
+
+構築する手順
+今回のレッスンでは、次の手順で、
+簡単な1行掲示板を構築していきます。
+
+1. Webページを用意する
+2. DBを準備する
+3. PHPでDBを参照する
+4. 投稿フォームを追加する
+5. PHPでDBに書き込みする
+6. 掲示板の機能をまとめる
+7. 削除ボタンを追加する
+8. データベースにカラムを追加する
+9. 掲示板の見た目を整える
+
+02:Webページを作ってみよう
+
+
+◆①演習課題「表に行を追加する」
+右側のbbs.htmlファイルは、掲示板の発言リストに「日時」と「投稿内容」をテーブルで表示します。
+1行目には、日時が「2016-11-01」、投稿内容が「hello」となっています。
+これを以下のように修正してください。
+
+- 表の2行目(見出し行含めると3行目)に、日時が「2017-12-01」で、
+投稿内容が「世界の皆さんこんにちは」と表示する
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```php:lesson1.php
+<h1>paiza掲示板</h1>
+
+<h2>発言リスト</h2>
+<table>
+	<tr><th>日時</th><th>投稿内容</th></tr>
+	<tr>
+		<td>2016-11-01</td>
+		<td>hello</td>
+	</tr>
+	<!-- ここに追加 -->
+	<tr>
+		<td>2017-12-01</td>
+		<td>世界の皆さんこんにちは</td>
+	</tr>
+</table>
+```
+
+
+
+03:MySQLを準備しよう
+
+
+◆① 演習課題「データベースのテーブルにレコードを挿入する」
+右側には、lessonデータベースにbbsというテーブルがあります。
+phpMyAdminのSQLタブで、SQLのINSERT文でbbsテーブルに次のレコードを挿入してください。
+
+- idが「3」
+- contentが「世界のみなさんこんにちは」
+- updated_atが「2016-12-01 00:00:00」
+
+採点をして、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```sql:lesson1.sql
+INSERT INTO bbs (id, content, updated_at) VALUES (3, '世界のみなさんこんにちは', '2016-12-01 00:00:00')
+```
+
+
+
+04:PHPでデータベースを参照しよう
+
+今回取り上げたSQL文
+-- データを追加する
+INSERT INTO bbs(id, content, updated_at)
+VALUES
+	(4, "hello paiza", "2016-10-16 04:00:00");
+
+
+◆①演習課題「SELECTで1レコードだけ表示しよう」
+右側のbbs.phpファイルは、lessonデータベースに接続します。
+このbbs.phpを以下のように修正してください。
+
+- PHPで、SELECTを行い、bbsテーブルのレコードを取得する
+- 取得したデータから、最初の1行だけ表示する。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```php:lesson1.php
+<?php
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+
+$row  = $stmt -> fetch(PDO::FETCH_ASSOC);
+
+print_r($row)
+?>
+```
+
+◆②演習課題「SELECTですべてのレコードを表示しよう」
+右側のbbs.phpファイルは、lessonデータベースに接続して、bbsテーブルの最初の1行だけ表示します。
+このファイルを以下のように修正してください。
+- while文を用いて、DBのレコードをすべて表示する。
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```php:lesson2.php
+<?php
+
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+
+// ###ここから下を修正###
+
+while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) {
+  print_r($row);
+  echo("<br/>");
+}
+
+?>
+```
+
+
+◆③演習課題「SELECTでカラムのデータを表示しよう」
+右側のbbs.phpファイルは、lessonデータベースに接続して、bbsテーブルのすべてのレコードから、"id"と"updated_at"の2つのカラムのデータだけ表示します。
+このファイルを以下のように修正してください。
+- while文を用いて、"content"カラムのデータも表示する。
+"content"カラムのデータは、"updated_at"カラムのデータの後ろで表示してください。
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```php:lesson3.php
+<?php
+
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+
+// ###ここから下を修正###
+
+while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) {
+	echo $row["id"];
+	echo $row["updated_at"];
+	echo $row["content"];
+	echo "<br>";
+}
+
+?>
+```
+
+
+05:フォームでメッセージを投稿 (6:29)
+
+
+◆①演習課題「フォームを設置する」
+右側のbbs.phpファイルでフォームを作ろうとしています。
+このファイルを以下のように修正してください。
+- フォームに、「input」タグを追加する。
+- フォームに、「button」タグを追加して、「送信」と表示する。
+ただし、フォームのボタンを押して、データを送信する必要はありません。
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```html:lesson1.html
+<html>
+<body>
+
+<form action="#">
+	<label>投稿内容</label>
+	<!-- ###ここにinput要素を追加### -->
+	<input>
+	<!-- ###ここにbutton要素を追加### -->
+	<button>送信</button>
+</form>
+
+</body>
+</html>
+```
+
+
+
+
+
+◆②演習課題「フォームでPOSTする」
+右側のbbs.phpファイルは、投稿内容欄のデータを送信して表示しようとしています。
+このファイルを以下のように修正してください。
+- フォームタグの「action」属性の値を「bbs.php」とする。
+- フォームタグに「method」属性を追加して、値を「post」とする。
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```html:lesson1.html
+<html>
+<body>
+
+<?php
+if (isset($_POST["content"])) {
+	$content = $_POST["content"];
+}
+else {
+	$content = "なし";
+}
+echo "投稿内容を受信:" . $content;
+
+?>
+
+<!-- ###次の行を修正### -->
+<form action="bbs.php" method="post">
+	<label>投稿内容</label>
+	<input type="text" name="content">
+	<button type="submit">送信</button>
+</form>
+
+</body>
+</html>
+
+```
+
+
+演習課題「フォームでPOSTした結果を表示する」
+右側のbbs.phpファイルは、投稿内容欄のデータを送信して表示しようとしています。
+このファイルを以下のように修正してください。
+
+- $_POST["content"]の中身が存在すれば、その内容を表示する。
+
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+```html:lesson1.html
+<html>
+<body>
+
+<?php
+if (isset($_POST["content"])) {
+	$content = $_POST["content"];
+}
+else {
+	$content = "なし";
+}
+echo "投稿内容を受信:" . $content;
+?>
+
+<form action="bbs.php" method="post">
+	<label>投稿内容</label>
+	<input type="text" name="content">
+	<button type="submit">送信</button>
+</form>
+
+</body>
+</html>
+
+```
+
+06:PHPでデータベースに書き込もう (4:54)
+
+①演習課題「POSTされた値を使ってINSERTする」
+右側のbbs.phpでは、フォームから送信された投稿内容を、データベースに保存しようとしています。
+
+PHPでPOSTされた値を受け取ってINSERTするコードを作成してください。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson1.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 受け取ったレコードの追加
+if (isset($_POST["content"])) {
+    $content   = $_POST["content"];
+    $sql  = "INSERT INTO bbs (content, updated_at) VALUES (:content, NOW());";
+    $stmt = $pdo->prepare($sql);
+    $stmt -> bindValue(":content", , PDO::PARAM_STR); // ### 書き込む変数を引数に記述 ###
+    $stmt -> execute();
+}
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+
+// 全てのレコードを表示
+while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) {
+    print_r($row);
+    echo("<br/>");
+}
+?>
+
+<h2>投稿フォーム</h2>
+<form action="bbs.php" method="post">
+  <label>投稿内容</label>
+  <input type="text" name="content">
+  <button type="submit">送信</button>
+</form>
+
+</body>
+</html>
+
+```
+模範解答1
+bindValueに、$contentを渡す
+
+
+
+
+②演習課題「間違い探し その1 - フォームの間違い」
+右側のbbs.phpでは、フォームから送信された投稿内容を、
+データベースに保存しようとしていますが、フォームに間違いがあります。
+正常に動作するようにフォームを修正してください。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson2.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 投稿内容を表示
+if (isset($_POST["content"])) {
+  echo "投稿内容:" . $_POST["content"];
+
+  // レコードの追加
+  $content   = $_POST["content"];
+  $sql  = "INSERT INTO bbs (content, updated_at) VALUES (:content, NOW());";
+  $stmt = $pdo->prepare($sql);
+  $stmt -> bindValue(":content", $content, PDO::PARAM_STR);
+  $stmt -> execute();
+}
+?>
+
+<h2>投稿フォーム</h2>
+<form action="bbs.php" method="post">
+  <label>投稿内容</label>
+  <input type="text" name="kontent">
+  <button type="submit">送信</button>
+</form>
+
+<?php
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+
+// 全てのレコードを表示
+while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) {
+    print_r($row);
+    echo("<br/>");
+}
+?>
+
+</body>
+</html>
+
+```
+模範解答1
+$stmt -> フォームの送信データ名を「content」にする
+
+③ 演習課題「間違い探し その2 - カラム名の間違い」
+右側のbbs.phpでは、フォームから送信された投稿内容を、データベースに保存しようとしていますが、書き込みコードに間違いがあります。
+
+正常に動作するよう、コードを修正してください。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```html:lesson3.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+if (isset($_POST["content"])) {
+  // 投稿内容を表示
+  echo "投稿内容:" . $_POST["content"];
+
+  // レコードの追加
+  $content   = $_POST["content"];
+  $sql  = "INSERT INTO bbs (comtent, updated_at) VALUES (:content, NOW());";
+  $stmt = $pdo->prepare($sql);
+  $stmt -> bindValue(":content", $content, PDO::PARAM_STR);
+  $stmt -> execute();
+}
+?>
+
+<h2>投稿フォーム</h2>
+<form action="bbs.php" method="post">
+  <label>投稿内容</label>
+  <input type="text" name="content">
+  <button type="submit">送信</button>
+</form>
+
+<?php
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+
+// 全てのレコードを表示
+while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) {
+    print_r($row);
+    echo("<br/>");
+}
+?>
+
+</body>
+</html>
+```
+模範解答1
+$stmt -> 書き込みコードのカラム名を「content」にする
+
+07:掲示板の機能をまとめよう (6:21)
+
+①演習課題「データベースの内容をテーブルで表示する」
+右のbbs.phpでは、データベースからbbsテーブルの全レコードをHTMLのテーブルで表示しようとしています。
+
+レコードの3つのカラム、「id」「updated_at」「content」の内容を表示するように、
+while文の中にコードを追加してください。
+
+採点をして、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson1.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>日時</th>
+        <th>投稿内容</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+
+②演習課題「間違い探し - テーブルが崩れる」
+右のbbs.phpでは、データベースからbbsテーブルの全レコードを
+HTMLのテーブルで表示しようとしていますが、テーブルに間違いがあります。
+正常に動作するようにテーブルを修正してください。
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson2.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>日時</th>
+        <th>投稿内容</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+
+
+
+```
+
+
+
+
+
+08:投稿の削除機能を作ろう (4:39)
+
+①演習課題「削除ボタンを追加」
+右側のbbs.phpでは、bbsテーブルのすべてのレコードをHTMLのテーブルで表示しています。
+
+このテーブルの4列目に、削除ボタンを追加してください。
+削除ボタンには、「button」タグを使い、テキストに「削除」と表示します。
+
+この演習問題では、削除ボタンが実際に動作する必要はありません。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson1.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>日時</th>
+        <th>投稿内容</th>
+        <th>削除ボタン</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <!-- ### ここに削除ボタンを追加 -->
+            <td><button>削除</button></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+
+
+②演習課題「813の謎」
+右側のbbs.phpでは、HTMLテーブルの各行に削除ボタンがあります。
+このボタンを押すと、常にformで「813」が送信されてしまいます。
+
+ボタンを押したときに、対応するレコードのidを送信するようにコードを修正してください。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+
+```html:lesson2.html
+<html>
+<body>
+
+<?php
+// フォームで送信したデータを受け取ることができるか確認
+if (isset($_POST["delete_id"])) {
+    echo("delete_id: " . $_POST["delete_id"]);
+}
+
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>日時</th>
+        <th>投稿内容</th>
+        <th>削除ボタン</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <td>
+                <form action="bbs.php" method="post">
+                    <button type="submit">削除</button>
+                    <input type="hidden" name="delete_id" value=<?= $row["id"] ?> />
+                </form>
+            </td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+③ 演習課題「POSTされたidを受け取ってレコードを削除」
+右のbbs.phpでは、テーブルの各行にある削除ボタンを押すと、対応するidを送信します。
+
+送信されたidを受け取って、対応するレコードを削除するようにコードを修正してください。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```html:lesson3.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 受け取ったレコードの削除
+if (isset($_POST["delete_id"])) {
+    $delete_id = $_POST["delete_id"];
+    echo("delete_id: " . $delete_id);
+    $sql = "DELETE FROM bbs WHERE id = :delete_id;";
+    $stmt = $pdo->prepare($sql);
+    $stmt -> bindValue(":delete_id", $delete_id, PDO::PARAM_INT);
+    $stmt -> execute();
+}
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+		<th>日時</th>
+        <th>投稿内容</th>
+        <th>削除ボタン</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+			<td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <td>
+                <form action="bbs.php" method="post">
+                    <button type="submit">削除</button>
+                    <input type="hidden" name="delete_id" value=<?= $row["id"] ?> />
+                </form>
+            </td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+
+09:投稿者名のカラムを追加しよう (6:17)
+
+
+①演習課題「投稿フォームに名前欄を追加する」
+右のbbs.phpは、1行掲示板になっており、フォームで送信した「投稿内容」を、
+データベースに書き込んで表示します。この掲示板のフォームを以下のように修正して、
+「投稿者」欄を追加してください。
+
+- 「label」タグを追加し、そのテキストを「投稿者」にする
+- 「input」タグを追加し、その「type」属性を「text」に、「name」属性を「user_name」にする
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson1.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 受け取ったレコードの追加
+if (isset($_POST["content"])) {
+    $content = $_POST["content"];
+    $sql  = "INSERT INTO bbs (content, updated_at) VALUES (:content, NOW());";
+    $stmt = $pdo->prepare($sql);
+    $stmt -> bindValue(":content", $content, PDO::PARAM_STR);
+    $stmt -> execute();
+}
+?>
+
+<!-- 投稿フォーム -->
+<form action="bbs.php" method="post">
+    <label>投稿内容</label>
+    <input type="text" name="content">
+    <label>投稿者</label>
+    <input type="text" name="user_name">
+    <button type="submit">送信</button>
+</form>
+
+<?php
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>日時</th>
+        <th>投稿内容</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+
+模範解答1
+フォームに、「label」タグと「input」タグを追加する
+
+
+
+②演習課題「phpmyadminでDBのテーブルにカラムを追加」
+右のbbs.phpは、1行掲示板になっており、フォームで送信した「投稿内容」を、
+データベースに書き込んで表示します。
+この掲示板のデータベースをphpMyAdminで以下のように修正して、
+「投稿者」欄を追加してください。
+
+- lessonデータベースのbbsテーブルに、「投稿者」の名前を保存するカラムを追加する。
+- 追加カラムは、データ型を「TEXT」型、名前を「user_name」とする。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson2.html
+
+
+```
+
+③演習課題「HTMLのテーブルに名前欄を追加」
+右のbbs.phpは、1行掲示板になっており、フォームで送信した「投稿内容」を、
+データベースに書き込んで表示します。この掲示板のテーブルを以下のように修正して、
+「投稿者」欄を追加してください。
+
+- 4列目に、「user_name」カラムを表示する。
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson3.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 受け取ったレコードの追加
+if (isset($_POST["content"]) && isset($_POST["user_name"])) {
+    $content   = $_POST["content"];
+    $user_name = $_POST["user_name"];
+    $sql  = "INSERT INTO bbs (content, user_name, updated_at) VALUES (:content, :user_name, NOW());";
+    $stmt = $pdo->prepare($sql);
+    $stmt -> bindValue(":content", $content, PDO::PARAM_STR);
+    $stmt -> bindValue(":user_name", $user_name, PDO::PARAM_STR);
+    $stmt -> execute();
+}
+?>
+
+<h2>投稿フォーム</h2>
+<form action="bbs.php" method="post">
+    <label>投稿内容</label>
+    <input type="text" name="content" />
+    <label>投稿者</label>
+    <input type="text" name="user_name" />
+    <button type="submit">送信</button>
+</form>
+
+<?php
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>日時</th>
+        <th>投稿内容</th>
+        <th>投稿者</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <!-- ### 以下のコードを修正 ### -->
+            <td><?= $row["user_name"] ?></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+
+④演習課題「投稿された名前をINSERT」
+右のbbs.phpは、1行掲示板になっており、フォームで送信した
+「投稿内容」を、データベースに書き込んで表示します。この掲示板の書き込みコードを
+以下のように修正して、「投稿者」欄のデータを保存してください。
+
+- 受け取ったレコードの追加コードで、user_nameカラムに$user_nameの値を書き込む
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson4.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 受け取ったレコードの追加
+if (isset($_POST["content"]) && isset($_POST["user_name"])) {
+    $content   = $_POST["content"];
+    $user_name = $_POST["user_name"];
+    $sql  = "INSERT INTO bbs (content, user_name, updated_at) VALUES (:content, :user_name, NOW());";
+    $stmt = $pdo->prepare($sql);
+    $stmt -> bindValue(":content", $content, PDO::PARAM_STR);
+    // ### 以下にコードを追加する
+    $stmt -> bindValue(":user_name", $user_name, PDO::PARAM_STR);
+    $stmt -> execute();
+}
+?>
+
+<!-- 投稿フォーム -->
+<form action="bbs.php" method="post">
+    <label>投稿内容</label>
+    <input type="text" name="content" />
+    <label>投稿者</label>
+    <input type="text" name="user_name" />
+    <button type="submit">送信</button>
+</form>
+
+<?php
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>投稿内容</th>
+        <th>投稿者</th>
+        <th>更新日時</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <td><?= $row["user_name"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+```
+
+⑤演習課題「間違い探し - 書き込まれない」
+右のbbs.phpは、1行掲示板になっており、フォームで送信した
+「投稿内容」を、データベースに書き込んで表示しようとしていますが、
+書き込みコードのところに間違いがあります。
+正常に動作するよう、コードを修正してください。
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```html:lesson5.html
+<html>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 受け取ったレコードの追加
+if (isset($_POST["content"]) && isset($_POST["user_name"])) {
+    $content   = $_POST["content"];
+    $user_name = $_POST["user_name"];
+    $sql  = "INSERT INTO bbs (content, user_name, updated_at) VALUES (:content, :user_name, NOW());";
+    $stmt = $pdo->prepare($sql);
+    $stmt -> bindValue(":content", $content, PDO::PARAM_STR);
+    $stmt -> bindValue(":user_name", $user_name, PDO::PARAM_STR);
+    $stmt -> execute();
+}
+?>
+
+<!-- 投稿フォーム -->
+<form action="bbs.php" method="post">
+    <label>投稿内容</label>
+    <input type="text" name="content" />
+    <label>投稿者</label>
+    <input type="text" name="user_name" />
+    <button type="submit">送信</button>
+</form>
+
+<?php
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table border=1>
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>投稿内容</th>
+        <th>投稿者</th>
+        <th>更新日時</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <td><?= $row["user_name"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+        </tr>
+    <?php } ?>
+</table>
+
+</body>
+</html>
+
+```
+10:Bootstrapで見た目を整えよう (5:03)
+
+①演習課題「投稿フォームにBootstrapを適用」
+右のbbs.phpは、投稿フォームにBootstrapを適用している途中の状態です。
+
+フォームの「投稿者」のところに、次のようにBootstrapのクラスを適用してください。
+
+- 2つ目の「div」タグの「class」属性を「form-group」にする
+- 「label」タグの「class」属性を「control-label」にする
+- 「input」タグの「class」属性を「form-control」にする
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+
+```html:lesson1.html
+<html>
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<h2>投稿フォーム</h2>
+<form action="bbs.php">
+    <div class="form-group">
+        <label class="control-label">投稿内容</label>
+        <input type="text" name="content" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">投稿者</label>
+        <input type="text" name="user_name" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">送信</button>
+</form>
+
+</body>
+</html>
+```
+
+②演習課題「発言リストにBootstrapを適用」
+右のbbs.phpは、発言リストにBootstrapを適用している途中の状態です。
+
+この発言リストに、次のようにBootstrapのクラスを適用してください。
+
+- 「table」タグの「class」属性を「table table-striped」にする
+- 「button」タグの「class」属性を「btn btn-danger」にする
+
+採点して、すべてのジャッジに正解すれば、演習課題クリアです！
+
+```html:lesson2.html
+<html>
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<?php
+// データベースへの接続設定
+$pdo  = new PDO("mysql:host=127.0.0.1;dbname=lesson;charset=utf8", "root", "");
+
+// 全てのレコードを取得
+$sql  = "SELECT * FROM bbs ORDER BY updated_at DESC";
+$stmt = $pdo->prepare($sql);
+$stmt -> execute();
+?>
+
+<h2>発言リスト</h2>
+<!-- 全てのレコードをHTMLテーブルで表示 -->
+<table class="table table-striped">
+    <!-- HTMLテーブルの1行目の表示 -->
+    <tr>
+        <th>id</th>
+        <th>投稿内容</th>
+        <th>投稿者</th>
+        <th>更新日時</th>
+        <th>削除ボタン</th>
+    </tr>
+
+    <!-- HTMLテーブルの2行目移行で全てのレコードを表示 -->
+    <?php while ($row = $stmt -> fetch(PDO::FETCH_ASSOC)) { ?>
+        <tr>
+            <td><?= $row["id"] ?></td>
+            <td><?= $row["content"] ?></td>
+            <td><?= $row["user_name"] ?></td>
+            <td><?= $row["updated_at"] ?></td>
+            <td>
+                <form action="bbs.php" method="post">
+                    <button type="submit" class="btn btn-danger">削除</button>
+                    <input type="hidden" name="delete_id" value=<?= $row["id"] ?> />
+                </form>
+            </td>
+        </tr>
+    <?php } ?>
+</table>
+
+</head>
+</html>
+```
+
+
