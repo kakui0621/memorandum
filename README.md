@@ -1,2 +1,1 @@
-# memorandum
-My memorandum.
+# My programing note
